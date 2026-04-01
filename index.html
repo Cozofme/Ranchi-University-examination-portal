@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranchi University - Result</title>
+    <style>
+        :root {
+            --ru-blue: #0b44bc;
+            --bg-light: #f0f5ff;
+            --input-bg: #e8efff;
+            --border-color: #d0daff;
+            --text-dark: #1a3a8a;
+            --overlay-bg: #212121;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- Lazy Loading Overlay --- */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            z-index: 3000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--ru-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 18px;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Header --- */
+        .header {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo { width: 50px; height: 50px; }
+
+        .header-text p { color: var(--ru-blue); font-weight: 700; font-size: 14px; line-height: 1.1; }
+        .header-text h1 { color: var(--ru-blue); font-size: 18px; font-weight: 800; }
+
+        /* --- Main Card --- */
+        .main-container { flex: 1; padding: 15px; display: flex; justify-content: center; }
+
+        .result-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 400px;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            height: fit-content;
+            border: 1px solid #fff;
+        }
+
+        .result-card h2 { color: var(--text-dark); font-size: 24px; margin-bottom: 20px; }
+        .field-group { margin-bottom: 18px; }
+        .field-group label { display: block; color: #3e517a; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+
+        .custom-input {
+            width: 100%;
+            padding: 14px 16px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: #4a5568;
+            font-size: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .arrow-icon {
+            width: 10px; height: 10px;
+            border-right: 2px solid #8899bb;
+            border-bottom: 2px solid #8899bb;
+            transform: rotate(45deg);
+            margin-top: -4px;
+        }
+
+        .btn-get-result {
+            width: 100%;
+            background-color: var(--ru-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        /* --- Dark Overlays --- */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .overlay-content {
+            background: var(--overlay-bg);
+            width: 100%;
+            max-width: 400px;
+            max-height: 95vh;
+            border-radius: 24px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .overlay-header { padding: 20px; font-size: 22px; font-weight: 500; border-bottom: 1px solid #333; }
+        .options-list { overflow-y: auto; flex: 1; }
+
+        .option-item {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            font-size: 22px;
+        }
+
+        .radio-circle {
+            width: 20px; height: 20px;
+            border: 2px solid #555;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .option-item.active .radio-circle { border-color: #8ab4f8; }
+        .option-item.active .radio-circle::after {
+            content: ''; width: 10px; height: 10px;
+            background: #8ab4f8; border-radius: 50%;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        }
+
+        /* --- Footer --- */
+        .footer { background-color: var(--ru-blue); color: white; text-align: center; padding: 30px 20px; }
+
+        /* --- Prank Modal --- */
+        .prank-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .prank-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            width: 80%;
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop { from { transform: scale(0.5); } to { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p class="loading-text" id="statusText">Connecting to examination server...</p>
+    </div>
+
+    <header class="header">
+        <img src="logo.png" alt="Logo" class="logo">
+        <div class="header-text">
+            <p>राँची विश्वविद्यालय</p>
+            <h1>RANCHI UNIVERSITY</h1>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="result-card">
+            <h2>Result</h2>
+
+            <div class="field-group">
+                <label>Course Type</label>
+                <div class="custom-input" onclick="openOverlay('courseOverlay')">
+                    <span id="courseVal">Select Course</span>
+                    <div class="arrow-icon"></div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label>Semester/Year</label>
+                <div class="custom-input" onclick="openOverlay('semOverlay')">
+                    <span id="semVal">Select Semester</span>
+                    <div class="arrow-icon"></div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label>Stream</label>
+                <div class="custom-input" onclick="openOverlay('streamOverlay')">
+                    <span id="streamVal">Select Stream</span>
+                    <div class="arrow-icon"></div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label>Roll No</label>
+                <input type="text" class="custom-input" id="rollInput" placeholder="Enter Your Roll No.">
+            </div>
+
+            <button class="btn-get-result" onclick="checkResult()">Get Result</button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div style="font-weight:bold; text-decoration:underline;">राँची विश्वविद्यालय</div>
+        <h3 style="margin:10px 0 20px">RANCHI UNIVERSITY</h3>
+        <p style="font-size:12px; opacity:0.7">© Copyright 2022-23 by Ranchi University.</p>
+    </footer>
+
+    <div id="courseOverlay" class="overlay" onclick="closeOverlay(event)">
+        <div class="overlay-content">
+            <div class="overlay-header">Select Course</div>
+            <div class="options-list">
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'ADCA')">ADCA <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'AMANAT')">AMANAT <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'BDS')">B.D.S. <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'B.Ed.')">B.Ed. <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'BBA.LL.B')">BBA.LL.B <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'BMLT')">BMLT <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'D.M.')">D.M. <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'DGO')">DGO <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'DPN')">DPN <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'GE')">GE <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'LL.B.')">LL.B. <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'LL.M.')">LL.M. <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'M.CH.')">M.CH. <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'M.Ed.')">M.Ed. <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'M.Phil.')">M.Phil. <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'MBBS')">MBBS <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'MD')">MD <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'MHA')">MHA <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'MS')">MS <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'NEP')">NEP <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'Nursing (Basic)')">Nursing (Basic) <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'Nursing (Post-Basic)')">Nursing (Post-Basic) <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'PDCC')">PDCC <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'PG')">PG <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'PGDGC')">PGDGC <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'PGDMP')">PGDMP <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'PGDS')">PGDS <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'PGDYS')">PGDYS <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'courseVal', 'UG')">UG <div class="radio-circle"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="semOverlay" class="overlay" onclick="closeOverlay(event)">
+        <div class="overlay-content">
+            <div class="overlay-header">Select Semester</div>
+            <div class="options-list">
+                <div class="option-item" onclick="selectOpt(this, 'semVal', '1')">1 <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'semVal', '2')">2 <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'semVal', '3')">3 <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'semVal', '4')">4 <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'semVal', '5')">5 <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'semVal', '6')">6 <div class="radio-circle"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="streamOverlay" class="overlay" onclick="closeOverlay(event)">
+        <div class="overlay-content">
+            <div class="overlay-header">Select Stream</div>
+            <div class="options-list">
+                <div class="option-item" onclick="selectOpt(this, 'streamVal', 'Arts')">Arts <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'streamVal', 'Commerce')">Commerce <div class="radio-circle"></div></div>
+                <div class="option-item" onclick="selectOpt(this, 'streamVal', 'Science')">Science <div class="radio-circle"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="prankModal" class="prank-modal">
+        <div class="prank-box">
+            <h1 style="color:#800040; margin-bottom:15px">APRIL FOOL 🎉</h1>
+            <p>Tum to ban gya fool ab bakiyon ko bhi bnao</p>
+            
+        </div>
+    </div>
+
+    <script>
+        function openOverlay(id) { document.getElementById(id).style.display = 'flex'; }
+
+        function closeOverlay(e) { if (e.target.className === 'overlay') e.target.style.display = 'none'; }
+
+        function selectOpt(element, targetId, val) {
+            document.getElementById(targetId).innerText = val;
+            document.getElementById(targetId).style.color = "#000";
+            const list = element.parentElement;
+            Array.from(list.children).forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+            setTimeout(() => { document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none'); }, 200);
+        }
+
+        function checkResult() {
+            const roll = document.getElementById('rollInput').value;
+            if(!roll) { alert("Please enter Roll Number"); return; }
+
+            const loader = document.getElementById('loadingOverlay');
+            const status = document.getElementById('statusText');
+            loader.style.display = 'flex';
+
+            // 40 Second Prank Loading logic
+            setTimeout(() => { status.innerText = "Verifying Roll Number..."; }, 5000);
+            setTimeout(() => { status.innerText = "Accessing Examination Database..."; }, 12000);
+            setTimeout(() => { status.innerText = "Compiling Result Data..."; }, 22000);
+            setTimeout(() => { status.innerText = "Finalizing Grade Calculations..."; }, 32000);
+
+            setTimeout(() => {
+                loader.style.display = 'none';
+                document.getElementById('prankModal').style.display = 'flex';
+                status.innerText = "Connecting to examination server...";
+            }, 40000);
+        }
+    </script>
+</body>
+  </html>
